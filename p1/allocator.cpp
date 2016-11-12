@@ -165,8 +165,8 @@ bool Allocator::AllocatorImpl::moveToPreviousFree(
                 }
                 // Copy memory content
                 memcpy(
-                    previousArea->pointer + offset,
-                    alloc_mem->pointer + offset,
+                    (void*)((unsigned char*)(previousArea->pointer) + offset),
+                    (void*)((unsigned char*)(alloc_mem->pointer) + offset),
                     bytesToCopy
                 );
                 offset += bytesToCopy;
@@ -175,7 +175,8 @@ bool Allocator::AllocatorImpl::moveToPreviousFree(
         }
         // Swap allocated and free memory
         MemoryInfo newFreeArea(
-            previousArea->pointer + alloc_mem->size, previousArea->size, true
+            (void*)((unsigned char*)(previousArea->pointer) + alloc_mem->size),
+            previousArea->size, true
         );
         alloc_mem->pointer = previousArea->pointer;
         this->memory_table.erase(previousArea);
@@ -212,7 +213,9 @@ bool Allocator::AllocatorImpl::extendToNextFree(
     }
 
     // Extend the area
-    nextArea->pointer += new_size - alloc_mem->size;
+    nextArea->pointer = (void*)(
+        (unsigned char*)(nextArea->pointer) + new_size - alloc_mem->size
+    );
     nextArea->size -= new_size - alloc_mem->size;
     alloc_mem->size = new_size;
     if (nextArea->size == 0) {
@@ -347,7 +350,9 @@ Pointer Allocator::alloc(size_t N)
             bestFreeArea, allocatedInfo
         );
         // Reduce the free area
-        bestFreeArea->pointer += N;
+        bestFreeArea->pointer = (void*)(
+            (unsigned char*)(bestFreeArea->pointer) + N
+        );
         bestFreeArea->size -= N;
     }
 
@@ -386,7 +391,8 @@ void Allocator::realloc(Pointer &p, size_t N)
     if (N < p.impl->p->size) {
         // Insert a free space area after the specified one
         MemoryInfo freeAreaInfo(
-            p.impl->p->pointer + N, p.impl->p->size - N, true
+            (void*)((unsigned char*)(p.impl->p->pointer) + N),
+            p.impl->p->size - N, true
         );
         auto currentArea = p.impl->p;
         ++currentArea;
