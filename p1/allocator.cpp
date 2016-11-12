@@ -223,7 +223,7 @@ std::list<MemoryInfo>::iterator Allocator::AllocatorImpl::UniteFreeSpace(
     std::list<MemoryInfo>::iterator fs
 )
 {
-    std::list<MemoryInfo>::iterator highestSpace, lowestSpace, currentSpace;
+    std::list<MemoryInfo>::iterator highestArea, lowestArea, currentArea;
     size_t cumulativeSize = 0;
 
     if (fs == this->memory_table.end()) {
@@ -235,12 +235,12 @@ std::list<MemoryInfo>::iterator Allocator::AllocatorImpl::UniteFreeSpace(
     }
 
     // Find the highest (with least address) free memory area of the set
-    highestSpace = fs;
-    while (highestSpace != this->memory_table.begin()) {
-        currentSpace = highestSpace;
-        --currentSpace;
-        if (currentSpace->is_freespace) {
-            --highestSpace;
+    highestArea = fs;
+    while (highestArea != this->memory_table.begin()) {
+        currentArea = highestArea;
+        --currentArea;
+        if (currentArea->is_freespace) {
+            --highestArea;
         } else {
             break;
         }
@@ -250,32 +250,32 @@ std::list<MemoryInfo>::iterator Allocator::AllocatorImpl::UniteFreeSpace(
      * Find the highest (with least address) allocated memory area after the
      * set. May be end().
      */
-    lowestSpace = fs;
+    lowestArea = fs;
     do {
-        ++lowestSpace;
-        if (lowestSpace == this->memory_table.end()) {
+        ++lowestArea;
+        if (lowestArea == this->memory_table.end()) {
             break;
         }
-    } while (lowestSpace->is_freespace);
+    } while (lowestArea->is_freespace);
 
     // Obtain last free memory area in the set
-    currentSpace = lowestSpace;
-    --currentSpace;
+    currentArea = lowestArea;
+    --currentArea;
 
     // Check if there is only one free memory area in the set
-    if (highestSpace != currentSpace) {
+    if (highestArea != currentArea) {
         // Calculate the memory amount
-        cumulativeSize = rangeMemoryAmount(highestSpace, lowestSpace);
+        cumulativeSize = rangeMemoryAmount(highestArea, lowestArea);
 
         // Use the first memory area of the set
-        highestSpace->size = cumulativeSize;
+        highestArea->size = cumulativeSize;
         // Remove other memory areas
-        currentSpace = highestSpace;
-        ++currentSpace;
-        this->memory_table.erase(currentSpace, lowestSpace);
+        currentArea = highestArea;
+        ++currentArea;
+        this->memory_table.erase(currentArea, lowestArea);
     }
 
-    return highestSpace;
+    return highestArea;
 }
 
 /** Pre-defined. Allocator constructor. */
@@ -305,47 +305,47 @@ Pointer Allocator::alloc(size_t N)
         return returnPointer;
     }
 
-    // Find the free space with the best proper size
+    // Find the free area with the best proper size
     bool bestIsSet = false;
     size_t minAmountDifference = 0;
-    std::list<MemoryInfo>::iterator bestFreeSpace;
+    std::list<MemoryInfo>::iterator bestFreeArea;
 
     for (
-        auto currentSpace = this->impl->memory_table.begin();
-        currentSpace != this->impl->memory_table.end();
-        ++currentSpace
+        auto currentArea = this->impl->memory_table.begin();
+        currentArea != this->impl->memory_table.end();
+        ++currentArea
     ) {
-        if ((currentSpace->is_freespace) && (currentSpace->size >= N)) {
+        if ((currentArea->is_freespace) && (currentArea->size >= N)) {
             if (
                 (!bestIsSet) ||
-                (minAmountDifference > currentSpace->size - N)
+                (minAmountDifference > currentArea->size - N)
             ) {
-                minAmountDifference = currentSpace->size - N;
-                bestFreeSpace = currentSpace;
+                minAmountDifference = currentArea->size - N;
+                bestFreeArea = currentArea;
                 bestIsSet = true;
             }
         }
     }
 
     if (!bestIsSet) {
-        // Free space is not found
+        // Free area is not found
         AllocError error(AllocErrorType::NoMemory, "");
         throw error;
     }
 
-    // Try to change free space to allocated space
-    if (bestFreeSpace->size == N) {
-        bestFreeSpace->is_freespace = false;
-        returnPointer.impl->p = bestFreeSpace;
+    // Try to change the free area to an allocated area
+    if (bestFreeArea->size == N) {
+        bestFreeArea->is_freespace = false;
+        returnPointer.impl->p = bestFreeArea;
     } else {
-        // Allocate part of free space
-        MemoryInfo allocatedInfo(bestFreeSpace->pointer, N, false);
+        // Allocate part of the free area
+        MemoryInfo allocatedInfo(bestFreeArea->pointer, N, false);
         returnPointer.impl->p = this->impl->memory_table.insert(
-            bestFreeSpace, allocatedInfo
+            bestFreeArea, allocatedInfo
         );
-        // Reduce the free space
-        bestFreeSpace->pointer += N;
-        bestFreeSpace->size -= N;
+        // Reduce the free area
+        bestFreeArea->pointer += N;
+        bestFreeArea->size -= N;
     }
 
 
@@ -382,12 +382,12 @@ void Allocator::realloc(Pointer &p, size_t N)
     // Try the quick realloc
     if (N < p.impl->p->size) {
         // Insert a free space area after the specified one
-        MemoryInfo freeSpaceInfo(
+        MemoryInfo freeAreaInfo(
             p.impl->p->pointer + N, p.impl->p->size - N, true
         );
-        auto currentSpace = p.impl->p;
-        ++currentSpace;
-        this->impl->memory_table.insert(currentSpace, freeSpaceInfo);
+        auto currentArea = p.impl->p;
+        ++currentArea;
+        this->impl->memory_table.insert(currentArea, freeAreaInfo);
         // Change specified area size
         p.impl->p->size = N;
         return;
@@ -453,21 +453,21 @@ void Allocator::defrag()
 
     // Bubble
     for (
-        auto freeElement = this->impl->memory_table.begin();
-        freeElement != this->impl->memory_table.end(); ++freeElement
+        auto freeArea = this->impl->memory_table.begin();
+        freeArea != this->impl->memory_table.end(); ++freeArea
     ) {
-        if (freeElement->is_freespace) {
+        if (freeArea->is_freespace) {
             // Unite free areas
-            this->impl->UniteFreeSpace(freeElement);
-            // Next element will be end or allocated
-            std::list<MemoryInfo>::iterator allocatedElement = freeElement;
-            ++allocatedElement;
+            this->impl->UniteFreeSpace(freeArea);
+            // The next area will be the end or an allocated one
+            std::list<MemoryInfo>::iterator allocatedArea = freeArea;
+            ++allocatedArea;
 
             /* Move allocated area content to the free area content.
              * Swap areas.
              */
-            if (this->impl->moveToPreviousFree(allocatedElement)) {
-                freeElement = allocatedElement;
+            if (this->impl->moveToPreviousFree(allocatedArea)) {
+                freeArea = allocatedArea;
             }
         }
     }
