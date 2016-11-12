@@ -1,5 +1,7 @@
 #include "allocator.hpp"
 
+#include <sstream>
+
 #include <list>
 #include <cstring>
 
@@ -476,5 +478,26 @@ void Allocator::defrag()
 
 std::string Allocator::dump()
 {
-    return std::string("");
+    std::ostringstream outs;
+
+    size_t freeSize = 0;
+    size_t allocatedSize = 0;
+
+    for (
+        auto currentArea = this->impl->memory_table.cbegin();
+        currentArea != this->impl->memory_table.cend(); ++currentArea
+    ) {
+        outs << "[ ";
+        if (currentArea->is_freespace) {
+            freeSize += currentArea->size;
+            outs << "FREE";
+        } else {
+            allocatedSize += currentArea->size;
+            outs << "ALLOC";
+        }
+        outs << " " << std::hex << currentArea->pointer << " " << std::dec <<
+        currentArea->size << " ]; ";
+    }
+    outs << "Allocated: " << allocatedSize << "; Free: " << freeSize << ";";
+    return outs.str();
 }
