@@ -329,7 +329,8 @@ Pointer Allocator::alloc(size_t N)
 
     if (!bestIsSet) {
         // Free area is not found
-        AllocError error(AllocErrorType::NoMemory, "");
+        AllocError error(AllocErrorType::NoMemory, "Unable to find any free "
+        "area to allocate memory");
         throw error;
     }
 
@@ -361,7 +362,7 @@ void Allocator::realloc(Pointer &p, size_t N)
     if ((p.impl->allocator) && (p.impl->allocator != this)) {
         throw AllocError(
             AllocErrorType::InvalidFree,
-            "The pointer was allocated by the different allicator"
+            "The pointer is created by the different allicator"
         );
     }
 
@@ -430,8 +431,8 @@ void Allocator::free(Pointer &p)
     if (p.impl->allocator != this) {
         throw AllocError(
             AllocErrorType::InvalidFree,
-            "Unable to free the pointer. It is invalid or created by the"
-            " different allocator."
+            "Unable to free. The pointer is invalid or created by the "
+            "different allocator."
         );
     }
 
