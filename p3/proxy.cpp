@@ -7,11 +7,18 @@
 #include "server_loop.hpp"
 #include "port_listener.hpp"
 
+/** Stores information for one source port from config file */
 struct ConfigEntry {
+    /** Source port from the config file */
 	unsigned short source_port;
+    /** Destinations (hosts & ports) for the specified source port from the config file */
 	std::list<Destination> destinations;
 };
 
+/** Parses specified config file.
+  *  @param filename - name of the config file;
+  *  @param config_entries - list instance to store config data
+  */
 void parse_config_file(const char* filename, std::list<ConfigEntry>& config_entries)
 {
 	config_entries.clear();
@@ -27,6 +34,11 @@ void parse_config_file(const char* filename, std::list<ConfigEntry>& config_entr
 		while ((last_index = config_line.find_first_of(':', last_index)) != std::string::npos) {
 			config_line[last_index] = ' ';
 		}
+
+        last_index = 0;
+        while ((last_index = config_line.find_first_of(',', last_index)) != std::string::npos) {
+            config_line[last_index] = ' ';
+        }
 
 		std::istringstream line_stream(config_line);
 
@@ -68,7 +80,7 @@ int main(int argc, char* argv[])
 
 	boost::asio::io_service io_service;
 
-	if (!init_serv_int(&disconnect_all)) {
+    if (!init_serv_int(&disconnect_all)) {
 		std::cerr << "Unable to allocate resources for the server loop" << std::endl;
 		return 2;
 	}
