@@ -29,14 +29,14 @@ void PortListener::handle_accept(const boost::system::error_code& err, boost::sh
 		auto dest_iterator = this->_destinations.cbegin();
 
 		std::advance(dest_iterator, rand_dist(rd));
-		std::cout << dest_iterator->host << " " << dest_iterator->port << std::endl;
 
 		this->_sessions.push_back(session);
 		session->client_start(dest_iterator->host, dest_iterator->port);
 		this->accept();
-	} else if (err != boost::asio::error::operation_aborted) {
-		throw std::runtime_error(std::string("Boost error: ") + err.message());
-	}
+    } else if (err != boost::asio::error::operation_aborted) {
+        std::cerr << "PortListener::handle_accept (" << err.value() << "): " << err.message() << std::endl;
+        throw std::runtime_error(std::string("Error: ") + err.message());
+    }
 }
 
 void PortListener::accept()

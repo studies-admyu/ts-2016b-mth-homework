@@ -26,13 +26,13 @@ public:
 	void client_start(const std::string& host, unsigned short port);
 	void terminate();
 private:
-	void termination_routine();
+    static void termination_routine(boost::shared_ptr<Session> session);
 
-	void handle_server_connect(const boost::system::error_code& err);
-	void handle_receive_from_client(const boost::system::error_code& err, size_t size);
-	void handle_send_to_client(const boost::system::error_code& err);
-	void handle_receive_from_server(const boost::system::error_code& err, size_t size);
-	void handle_send_to_server(const boost::system::error_code& err);
+    static void handle_server_connect(const boost::system::error_code& err, boost::shared_ptr<Session> session);
+    static void handle_receive_from_client(const boost::system::error_code& err, boost::shared_ptr<Session> session, size_t size);
+    static void handle_send_to_client(const boost::system::error_code& err, boost::shared_ptr<Session> session);
+    static void handle_receive_from_server(const boost::system::error_code& err, boost::shared_ptr<Session> session, size_t size);
+    static void handle_send_to_server(const boost::system::error_code& err, boost::shared_ptr<Session> session);
 
 	void receive_from_client();
 	void send_to_client(size_t size);
@@ -49,7 +49,5 @@ private:
 
 	bool _is_to_be_terminated;
 	bool _client_is_connected;
-	bool _client_sent_eof;
 	bool _server_is_connected;
-	bool _server_sent_eof;
 };

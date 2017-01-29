@@ -29,7 +29,7 @@ public:
 
 	void handle_session_close(boost::shared_ptr<Session> session);
 private:
-	void handle_accept(const boost::system::error_code& err, boost::shared_ptr<Session> session);
+    void handle_accept(const boost::system::error_code& err, boost::shared_ptr<Session> session);
 	void accept();
 
 	boost::asio::ip::tcp::acceptor _acceptor;
