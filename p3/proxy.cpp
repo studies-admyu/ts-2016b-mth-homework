@@ -4,7 +4,6 @@
 #include <list>
 #include <string>
 
-#include "server_loop.hpp"
 #include "port_listener.hpp"
 
 /** Stores information for one source port from config file */
@@ -60,13 +59,6 @@ void parse_config_file(const char* filename, std::list<ConfigEntry>& config_entr
 
 std::list<PortListener*> listeners;
 
-void disconnect_all() {
-	for ( auto listener : listeners ) {
-		listener->stop_listening();
-		listener->terminate_sessions();
-	}
-}
-
 int main(int argc, char* argv[])
 {
 	if (argc < 2) {
@@ -80,26 +72,22 @@ int main(int argc, char* argv[])
 
 	boost::asio::io_service io_service;
 
-    if (!init_serv_int(&disconnect_all)) {
-		std::cerr << "Unable to allocate resources for the server loop" << std::endl;
-		return 2;
-	}
-
 	for ( auto config_entry : config_entries ) {
 		listeners.push_back(new PortListener(io_service, config_entry.source_port, &(config_entry.destinations)));
 	}
 
 	io_service.run();
 
-	io_service.stop();
+    for ( auto listener : listeners ) {
+        listener->stop_listening();
+        listener->terminate_sessions();
+    }
 
 	while (listeners.size() > 0) {
 		PortListener* listener = listeners.front();
 		listeners.pop_front();
 		delete listener;
 	}
-
-	cleanup_serv_int();
 
 	return 0;
 }
